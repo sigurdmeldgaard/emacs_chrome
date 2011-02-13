@@ -133,16 +133,10 @@ Depending on the character encoding, may be different from the buffer length.")
 (defvar edit-server-url nil 
 	"The value gotten from the HTTP `x-url' header.")
 
-;; Mode magic
-;
-; We want to re-map some of the keys to trigger edit-server-done
-; instead of the usual emacs like behaviour. However using
-; local-set-key will affect all buffers of the same mode, hence we
-; define a special (derived) mode for handling editing of text areas.
-;
+(defvar edit-server-mode-map (make-sparse-keymap))
 
-(define-derived-mode edit-server-text-mode text-mode "Edit Server Text Mode"
-	"A derived version of text-mode with a few common Emacs keystrokes
+(define-minor-mode edit-server-mode
+	"A minor with a few common Emacs keystrokes
 rebound to more functions that can deal with the response to the
 edit-server request.
 
@@ -152,11 +146,15 @@ to the HTTP client: C-x #, C-x C-s, C-c C-c.
 If any of the above isused with a prefix argument, the
 unmodified text is sent back instead.
 "
-	:group 'edit-server)
-(define-key edit-server-text-mode-map (kbd "C-x #") 'edit-server-done)
-(define-key edit-server-text-mode-map (kbd "C-x C-s") 'edit-server-done)
-(define-key edit-server-text-mode-map (kbd "C-c C-c") 'edit-server-done)
-(define-key edit-server-text-mode-map (kbd "C-x C-c") 'edit-server-abort)
+:group 'edit-server
+:global 'nil
+:lighter "E"
+:init-value 'nil
+:keymap edit-server-mode-map)
+(define-key edit-server-mode-map (kbd "C-x #") 'edit-server-done)
+(define-key edit-server-mode-map (kbd "C-x C-s") 'edit-server-done)
+(define-key edit-server-mode-map (kbd "C-c C-c") 'edit-server-done)
+(define-key edit-server-mode-map (kbd "C-x C-c") 'edit-server-abort)
 
 
 ;; Edit Server socket code
@@ -335,7 +333,7 @@ If `edit-server-verbose' is non-nil, then STRING is also echoed to the message l
 		(copy-to-buffer buffer (point-min) (point-max))
 		(with-current-buffer buffer
 			(not-modified)
-			(edit-server-text-mode)
+			(edit-server-mode)
 			(add-hook 'kill-buffer-hook 'edit-server-abort* nil t)
 			(buffer-enable-undo)
 			(set (make-local-variable 'edit-server-proc) proc)
